@@ -115,7 +115,8 @@ datDF.index = datDF.pop('Date')
 ##---------------------------------------------------------------------------------------------------------------------
 
 
-acctLST = ['Free Non-Pay', 'Premium Pay', 'Premium Non-Pay', 'Premium Plus Pay']
+acctLST = ['Free Non-Pay']
+#acctLST = ['Free Non-Pay', 'Premium Pay', 'Premium Non-Pay', 'Premium Plus Pay']
 
 option1 = st.sidebar.selectbox(
     'What account entitlement would you like to use?',
