@@ -375,7 +375,7 @@ if option2 == 'Spend':
                         max_value=datetime.strptime("2023-01-01", "%Y-%m-%d"),
                     )
             time_frame = cols[1].selectbox(
-                        "Select prediction interval", ("daily", "weekly", "monthly")
+                        "Select prediction interval", ("daily")
                     )
             budget = st.number_input('Insert a number for the budget', value=1000000)
             submitted = st.form_submit_button(label="Submit")
