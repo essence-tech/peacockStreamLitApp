@@ -115,8 +115,7 @@ datDF.index = datDF.pop('Date')
 ##---------------------------------------------------------------------------------------------------------------------
 
 
-acctLST = ['Free Non-Pay']
-#acctLST = ['Free Non-Pay', 'Premium Pay', 'Premium Non-Pay', 'Premium Plus Pay']
+acctLST = ['Free Non-Pay', 'Premium Pay', 'Premium Non-Pay', 'Premium Plus Pay']
 
 option1 = st.sidebar.selectbox(
     'What account entitlement would you like to use?',
@@ -375,7 +374,7 @@ if option2 == 'Spend':
                         max_value=datetime.strptime("2023-01-01", "%Y-%m-%d"),
                     )
             time_frame = cols[1].selectbox(
-                        "Select prediction interval", ("daily",)
+                        "Select prediction interval", ("daily", "weekly", "monthly")
                     )
             budget = st.number_input('Insert a number for the budget', value=1000000)
             submitted = st.form_submit_button(label="Submit")
@@ -418,18 +417,29 @@ if option2 == 'Spend':
                                'Impressions_Video_Cinema', 'Impressions_Video_FEP']
 
             optuna.logging.set_verbosity(verbosity=0)
-            study = optuna.create_study(directions=["minimize", "maximize"])
-            study.optimize(objective, n_trials=1000, show_progress_bar=False)
+            sampler = optuna.samplers.NSGAIISampler()
+            study = optuna.create_study(directions=["minimize", "maximize"], sampler=sampler,
+                                        study_name="optuna-experiment")
+            study.optimize(objective, n_trials=5000)
             st.success("Success! Your campaign was optimized.")
 
             ##--------------------------------------------------------------------------------------------------------------
+
+            best_trials = study.best_trials
+            best_number = []
+            for i in range(len(best_trials)):
+                best_number.append(best_trials[i].number)
 
             t = study.trials_dataframe()
             t = t.sort_values(by=['values_0', 'values_1'], ascending=[True, False]).reset_index(drop=True)
             t = t[t['values_1']>0].reset_index(drop=True)
 
+            tBest = study.trials_dataframe()
+            tBest = tBest.iloc[best_number]
+            tBest = tBest.reset_index(drop=True)
+
             disDF = pd.DataFrame({'Point': ["Point-1", "Point-2", "Point-3", "Point-4", "Point-5"],
-                                  'MAA': np.round_(t['values_1'][:5], 0)})
+                                  'MAA': np.round_(tBest['values_1'][:5], 0)})
 
             ##--------------------------------------------------------------------------------------------------------------
 
@@ -454,7 +464,7 @@ if option2 == 'Spend':
 
             ##--------------------------------------------------------------------------------------------------------------
 
-            tVals = t.copy()
+            tVals = tBest.copy()
             tVals = tVals[tVals['state'] == 'COMPLETE']
             tVals = tVals.drop(columns=['values_0', 'values_1',
                                         'datetime_start', 'datetime_complete', 'duration',
@@ -493,8 +503,6 @@ if option2 == 'Spend':
 
             tValBudget = tValBudget.sort_values(by=['estBudgetError'])
 
-            tValBudgetEst1 = tValBudget[tValBudget['estBudgetError'] <= 1].reset_index(drop=True)
-
             ##--------------------------------------------------------------------------------------------------------------
 
             st.write("Top five optimizations")
@@ -507,17 +515,17 @@ if option2 == 'Spend':
                 col1.text(t['number'][3])
                 col1.text(t['number'][4])
                 col2.text("MAA")
-                col2.text('{:,.0f}'.format(t['values_1'][0]))
-                col2.text('{:,.0f}'.format(t['values_1'][1]))
-                col2.text('{:,.0f}'.format(t['values_1'][2]))
-                col2.text('{:,.0f}'.format(t['values_1'][3]))
-                col2.text('{:,.0f}'.format(t['values_1'][4]))
+                col2.text('{:,.0f}'.format(tBest['values_1'][0]))
+                col2.text('{:,.0f}'.format(tBest['values_1'][1]))
+                col2.text('{:,.0f}'.format(tBest['values_1'][2]))
+                col2.text('{:,.0f}'.format(tBest['values_1'][3]))
+                col2.text('{:,.0f}'.format(tBest['values_1'][4]))
                 col3.text("Optimized Budget")
-                col3.text('{:,.0f}'.format(tValBudgetEst1['estBudget'][0]))
-                col3.text('{:,.0f}'.format(tValBudgetEst1['estBudget'][1]))
-                col3.text('{:,.0f}'.format(tValBudgetEst1['estBudget'][2]))
-                col3.text('{:,.0f}'.format(tValBudgetEst1['estBudget'][3]))
-                col3.text('{:,.0f}'.format(tValBudgetEst1['estBudget'][4]))
+                col3.text('{:,.0f}'.format(tValBudget['estBudget'][0]))
+                col3.text('{:,.0f}'.format(tValBudget['estBudget'][1]))
+                col3.text('{:,.0f}'.format(tValBudget['estBudget'][2]))
+                col3.text('{:,.0f}'.format(tValBudget['estBudget'][3]))
+                col3.text('{:,.0f}'.format(tValBudget['estBudget'][4]))
 
             st.write("")
 
@@ -551,5 +559,3 @@ if option2 == 'Spend':
                 tmpDF[str(tValBudget['number'][i])] = estBudgetLST
 
             aggrid_interactive_table(tmpDF)
-
-
